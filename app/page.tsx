@@ -1,101 +1,114 @@
-import Image from "next/image";
+"use client";
+import { useEffect, useState } from "react";
+import Wrapper from "./components/Wrapper";
+
+import { FolderGit2 } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "react-toastify";
+import { createProject, getProjectsCreatedByUser } from "./action";
+import { Project } from "@/type";
+import ProjectCard from "./components/ProjectCard";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress as string;
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [projects, setProjects] = useState<Project[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const fetchProjects = async (email: string) => {
+    try {
+      const myproject = await getProjectsCreatedByUser(email);
+      setProjects(myproject);
+      console.log("myproject", myproject);
+    } catch (error) {
+      console.error("Erreur de récupération des projets", error);
+    }
+  };
+
+  useEffect(() => {
+    if (email) {
+      fetchProjects(email);
+    }
+  }, [email]);
+
+  const handleSubmit = async () => {
+    try {
+      const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
+      const project = await createProject(name, description, email);
+      if (modal) {
+        modal.close();
+        setName("");
+        setDescription("");
+        toast.success("Projet créé avec succès");
+      }
+    } catch (error) {
+      console.error("Erreur de création du projetc", error);
+    }
+  };
+  return (
+    <Wrapper>
+      <div>
+        {/* You can open the modal using document.getElementById('ID').showModal() method */}
+        <button
+          className="btn btn-primary mb-6"
+          onClick={() =>
+            (
+              document.getElementById("my_modal_3") as HTMLDialogElement
+            ).showModal()
+          }
+        >
+          Nouveau Project <FolderGit2 />
+        </button>
+        <dialog id="my_modal_3" className="modal">
+          <div className="modal-box">
+            <form method="dialog">
+              {/* if there is a button in form, it will close the modal */}
+              <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                ✕
+              </button>
+            </form>
+            <h3 className="font-bold text-lg">Nouveau Projet</h3>
+            <p className="py-4">
+              Décrivez votre projet simplement grâce à description
+            </p>
+            <div>
+              <input
+                placeholder="Nom du projet"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="border border-base-300 input input-bordered w-full mb-4 placeholder:text-sm"
+                required
+              />
+              <textarea
+                placeholder="Description"
+                value={description}
+                rows={4}
+                onChange={(e) => setDescription(e.target.value)}
+                className="mb-2 textarea textarea-bordered border border-base-300 w-full textarea-md placeholder:text-sm"
+                required
+              ></textarea>
+              <button className="btn btn-primary" onClick={handleSubmit}>
+                Nouveau Project <FolderGit2 />
+              </button>
+            </div>
+          </div>
+        </dialog>
+        <div className="w-full">
+          {projects.length > 0 ? (
+            <ul className="w-full grid md:grid-cols-3 gap-6 ">
+              {projects.map((project) => (
+                <li key={project.id}>
+                  <ProjectCard project={project} admin={1} style={true} />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div></div>
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+    </Wrapper>
   );
 }
