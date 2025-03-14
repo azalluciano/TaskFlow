@@ -2,14 +2,24 @@ import React, { FC } from "react";
 import { Project } from "@/type";
 import { Copy, ExternalLink, FolderGit2, Trash } from "lucide-react";
 import Link from "next/link";
+import { toast } from "react-toastify";
 
 interface ProjectProps {
   project: Project;
   admin: number;
   style: boolean;
+  onDelete?: (projectId: string) => void;
 }
 
-const ProjectCard: FC<ProjectProps> = ({ project, admin, style }) => {
+const ProjectCard: FC<ProjectProps> = ({ project, admin, style, onDelete }) => {
+  const handleDeleteClick = () => {
+    const isConfirmed = window.confirm(
+      "Voulez-vous vraiment supprimer ce projet?"
+    );
+    if (isConfirmed && onDelete) {
+      onDelete(project.id);
+    }
+  };
   const totalTasks = project.tasks?.length;
   const tasksByStatus = project.tasks?.reduce(
     (acc, task) => {
@@ -34,6 +44,16 @@ const ProjectCard: FC<ProjectProps> = ({ project, admin, style }) => {
     ? Math.round((tasksByStatus.toDo / totalTasks) * 100)
     : 0;
   const textSizeClass = style ? "text-sm" : "text-md";
+  const handleCopyCode = async () => {
+    try {
+      if (project.inviteCode) {
+        await navigator.clipboard.writeText(project.inviteCode);
+        toast.success("Invite code copied to clipboard");
+      }
+    } catch (err) {
+      toast.error("Failed to copy: ");
+    }
+  };
   return (
     <div
       className={`${
@@ -61,13 +81,13 @@ const ProjectCard: FC<ProjectProps> = ({ project, admin, style }) => {
       {admin === 1 && (
         <div className="flex justify-between items-center rounded-lg p-2 border border-base-300 mb-3 bg-base-200/30">
           <p className="text-primary font-bold m-3">{project.inviteCode}</p>
-          <button className="btn btn-sm ml-2">
+          <button className="btn btn-sm ml-2" onClick={handleCopyCode}>
             <Copy className="w-4" />
           </button>
         </div>
       )}
       <div className="flex flex-col mb-3">
-        <h2 className={`text-gray-500 mb-2`}>
+        <h2 className={`text-gray-500 mb-2 ${textSizeClass}`}>
           <span className="font-bold">A faire</span>
           <div className="badge badge-ghost badge-sm ml-1">
             {tasksByStatus.toDo}
@@ -79,12 +99,14 @@ const ProjectCard: FC<ProjectProps> = ({ project, admin, style }) => {
           max="100"
         ></progress>
         <div className="flex">
-          <span className={`text-gray-400 mt-2 `}>{toDoPercentage}%</span>
+          <span className={`text-gray-400 mt-2 ${textSizeClass}`}>
+            {toDoPercentage}%
+          </span>
         </div>
       </div>
 
       <div className="flex flex-col mb-3">
-        <h2 className={`text-gray-500 mb-2`}>
+        <h2 className={`text-gray-500 mb-2 ${textSizeClass}`}>
           <span className="font-bold">En cours</span>
           <div className="badge badge-ghost badge-sm ml-1">
             {tasksByStatus.inProgress}
@@ -96,12 +118,14 @@ const ProjectCard: FC<ProjectProps> = ({ project, admin, style }) => {
           max="100"
         ></progress>
         <div className="flex">
-          <span className={`text-gray-400 mt-2 `}>{inProgressPercentage}%</span>
+          <span className={`text-gray-400 mt-2 ${textSizeClass}`}>
+            {inProgressPercentage}%
+          </span>
         </div>
       </div>
 
       <div className="flex flex-col mb-3">
-        <h2 className={`text-gray-500 mb-2`}>
+        <h2 className={`text-gray-500 mb-2 ${textSizeClass}`}>
           <span className="font-bold">Terminée(s)</span>
           <div className="badge badge-ghost badge-sm ml-1">
             {tasksByStatus.done}
@@ -113,14 +137,16 @@ const ProjectCard: FC<ProjectProps> = ({ project, admin, style }) => {
           max="100"
         ></progress>
         <div className="flex">
-          <span className={`text-gray-400 mt-2 `}>{progressPecentage}%</span>
+          <span className={`text-gray-400 mt-2 ${textSizeClass}`}>
+            {progressPecentage}%
+          </span>
         </div>
       </div>
       <div className="flex">
         {style && (
           <Link
             className="btn btn-primary btn-sm"
-            href={`/projet/${project.id}`}
+            href={`/project/${project.id}`}
           >
             <div className="badge badge-sm">{totalTasks}</div>
             Tâche
@@ -128,7 +154,10 @@ const ProjectCard: FC<ProjectProps> = ({ project, admin, style }) => {
           </Link>
         )}
         {admin === 1 && (
-          <button className="btn btn-sm ml-3 btn-secondary">
+          <button
+            className="btn btn-sm ml-3 btn-secondary"
+            onClick={handleDeleteClick}
+          >
             <Trash className="w-4" />
           </button>
         )}

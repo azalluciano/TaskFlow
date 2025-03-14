@@ -5,9 +5,14 @@ import Wrapper from "./components/Wrapper";
 import { FolderGit2 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { toast } from "react-toastify";
-import { createProject, getProjectsCreatedByUser } from "./action";
+import {
+  createProject,
+  deleteProjectsById,
+  getProjectsCreatedByUser,
+} from "./action";
 import { Project } from "@/type";
 import ProjectCard from "./components/ProjectCard";
+import EmptyState from "./components/EmptyState";
 
 export default function Home() {
   const { user } = useUser();
@@ -32,6 +37,16 @@ export default function Home() {
     }
   }, [email]);
 
+  const deleteProject = async (projectId: string) => {
+    try {
+      await deleteProjectsById(projectId);
+      fetchProjects(email);
+      toast.success("Projet supprimé avec succès");
+    } catch (error) {
+      console.error("Erreur de suppression du projet", error);
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
@@ -40,6 +55,7 @@ export default function Home() {
         modal.close();
         setName("");
         setDescription("");
+        fetchProjects(email);
         toast.success("Projet créé avec succès");
       }
     } catch (error) {
@@ -100,12 +116,23 @@ export default function Home() {
             <ul className="w-full grid md:grid-cols-3 gap-6 ">
               {projects.map((project) => (
                 <li key={project.id}>
-                  <ProjectCard project={project} admin={1} style={true} />
+                  <ProjectCard
+                    project={project}
+                    admin={1}
+                    style={true}
+                    onDelete={deleteProject}
+                  />
                 </li>
               ))}
             </ul>
           ) : (
-            <div></div>
+            <div>
+              <EmptyState
+                imageSrc="/empty-project.png"
+                imageAlt="Picture of an empty project"
+                message="Vous n'avez pas encore de projet"
+              />
+            </div>
           )}
         </div>
       </div>
